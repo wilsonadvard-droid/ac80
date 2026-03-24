@@ -206,8 +206,8 @@ export default function App() {
 
                 <div className="relative aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl shadow-yellow-500/10 border border-white/10">
                   <img 
-                    src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&q=80&w=1000" 
-                    alt="Space Void"
+                    src="https://images.pexels.com/photos/3330895/pexels-photo-3330895.jpeg" 
+                    alt="Man in a traditional boat on a river during a rainy night"
                     className="object-cover w-full h-full opacity-60"
                     referrerPolicy="no-referrer"
                   />
@@ -327,7 +327,7 @@ export default function App() {
       {!isImmersive && (
         <footer className="py-20 px-6 border-t border-white/5 mt-20">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 opacity-40 text-sm">
-            <p>© 2026 {NOVEL_CONTENT.author}. All rights reserved.</p>
+            <p className="text-black">© 2026 {NOVEL_CONTENT.author}. All rights reserved.</p>
             <div className="flex gap-8">
               <a href="#" className="hover:text-white transition-colors">Twitter</a>
               <a href="#" className="hover:text-white transition-colors">Instagram</a>
