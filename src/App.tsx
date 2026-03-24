@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Book, ChevronRight, Menu, X, ArrowLeft, Share2, Bookmark } from 'lucide-react';
+import { Book, ChevronRight, Menu, X, ArrowLeft, Share2, Bookmark, Plus, Maximize, Minimize } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { NOVEL_CONTENT } from './content';
 import { clsx, type ClassValue } from 'clsx';
@@ -16,9 +16,22 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function App() {
+  const [chapters, setChapters] = useState(NOVEL_CONTENT.chapters);
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isAddingChapter, setIsAddingChapter] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [isImmersive, setIsImmersive] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsImmersive(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -26,7 +39,7 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const currentChapter = currentChapterIndex !== null ? NOVEL_CONTENT.chapters[currentChapterIndex] : null;
+  const currentChapter = currentChapterIndex !== null ? chapters[currentChapterIndex] : null;
 
   const navigateToChapter = (index: number) => {
     setCurrentChapterIndex(index);
@@ -34,12 +47,36 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleAddChapter = () => {
+    if (!newTitle || !newContent) return;
+    const newChapter = {
+      id: `chapter-${chapters.length + 1}`,
+      title: newTitle,
+      content: newContent
+    };
+    setChapters([...chapters, newChapter]);
+    setIsAddingChapter(false);
+    setNewTitle('');
+    setNewContent('');
+    setCurrentChapterIndex(chapters.length);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleImmersive = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => console.log(err));
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
-    <div className="min-h-screen selection:bg-yellow-500/30 selection:text-yellow-200">
+    <div className={cn("min-h-screen selection:bg-yellow-500/30 selection:text-yellow-200 transition-colors duration-700", isImmersive ? "bg-black" : "")}>
       {/* Navigation */}
       <nav className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6 py-4 flex justify-between items-center",
-        scrolled ? "bg-black/80 backdrop-blur-md border-b border-white/10" : "bg-transparent"
+        scrolled ? "bg-black/80 backdrop-blur-md border-b border-white/10" : "bg-transparent",
+        isImmersive ? "opacity-0 pointer-events-none" : "opacity-100"
       )}>
         <div 
           className="flex items-center gap-2 cursor-pointer group"
@@ -49,7 +86,14 @@ export default function App() {
           <span className="font-serif italic text-xl tracking-tight">The Whispering Void</span>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 md:gap-6">
+          <button 
+            onClick={() => setIsAddingChapter(true)}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors text-yellow-500"
+            title="Add New Chapter"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
           <button 
             onClick={() => setIsMenuOpen(true)}
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -84,7 +128,7 @@ export default function App() {
                 </button>
               </div>
               <div className="space-y-4">
-                {NOVEL_CONTENT.chapters.map((chapter, idx) => (
+                {chapters.map((chapter, idx) => (
                   <button
                     key={chapter.id}
                     onClick={() => navigateToChapter(idx)}
@@ -179,7 +223,7 @@ export default function App() {
               <div className="mt-32">
                 <h3 className="font-serif italic text-3xl mb-12">Table of Contents</h3>
                 <div className="grid md:grid-cols-3 gap-6">
-                  {NOVEL_CONTENT.chapters.map((chapter, idx) => (
+                  {chapters.map((chapter, idx) => (
                     <motion.div 
                       key={chapter.id}
                       whileHover={{ y: -10 }}
@@ -203,16 +247,22 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="max-w-3xl mx-auto px-6 py-20"
+              className={cn("mx-auto px-6 transition-all duration-700", isImmersive ? "max-w-4xl py-10" : "max-w-3xl py-20")}
             >
-              <div className="flex items-center justify-between mb-16">
+              <div className={cn("flex items-center justify-between mb-16 transition-opacity duration-500", isImmersive ? "opacity-0 hover:opacity-100" : "opacity-100")}>
                 <button 
-                  onClick={() => setCurrentChapterIndex(null)}
+                  onClick={() => {
+                    if (isImmersive) toggleImmersive();
+                    setCurrentChapterIndex(null);
+                  }}
                   className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity group"
                 >
                   <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Home
                 </button>
                 <div className="flex items-center gap-4">
+                  <button onClick={toggleImmersive} className="p-2 glass rounded-full hover:bg-white/10 transition-colors" title="Toggle Fullscreen">
+                    {isImmersive ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                  </button>
                   <button className="p-2 glass rounded-full hover:bg-white/10 transition-colors">
                     <Bookmark className="w-5 h-5" />
                   </button>
@@ -251,7 +301,7 @@ export default function App() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  {currentChapterIndex < NOVEL_CONTENT.chapters.length - 1 ? (
+                  {currentChapterIndex < chapters.length - 1 ? (
                     <button 
                       onClick={() => navigateToChapter(currentChapterIndex + 1)}
                       className="px-6 py-3 bg-yellow-500 text-black font-semibold rounded-full hover:bg-yellow-400 transition-all flex items-center gap-2"
@@ -274,16 +324,83 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="py-20 px-6 border-t border-white/5 mt-20">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 opacity-40 text-sm">
-          <p>© 2026 {NOVEL_CONTENT.author}. All rights reserved.</p>
-          <div className="flex gap-8">
-            <a href="#" className="hover:text-white transition-colors">Twitter</a>
-            <a href="#" className="hover:text-white transition-colors">Instagram</a>
-            <a href="#" className="hover:text-white transition-colors">Newsletter</a>
+      {!isImmersive && (
+        <footer className="py-20 px-6 border-t border-white/5 mt-20">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 opacity-40 text-sm">
+            <p>© 2026 {NOVEL_CONTENT.author}. All rights reserved.</p>
+            <div className="flex gap-8">
+              <a href="#" className="hover:text-white transition-colors">Twitter</a>
+              <a href="#" className="hover:text-white transition-colors">Instagram</a>
+              <a href="#" className="hover:text-white transition-colors">Newsletter</a>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
+
+      {/* Add Chapter Modal */}
+      <AnimatePresence>
+        {isAddingChapter && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddingChapter(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-[#111] border border-white/10 rounded-2xl p-8 shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="font-serif italic text-2xl">Add New Chapter</h2>
+                <button onClick={() => setIsAddingChapter(false)} className="p-2 hover:bg-white/10 rounded-full">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm opacity-60 mb-2">Chapter Title</label>
+                  <input 
+                    type="text" 
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-yellow-500/50 transition-colors"
+                    placeholder="e.g., The Silent Echo"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm opacity-60 mb-2">Content (Markdown supported)</label>
+                  <textarea 
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    className="w-full h-64 bg-black/50 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-yellow-500/50 transition-colors resize-none font-mono text-sm"
+                    placeholder="Write your chapter here..."
+                  />
+                </div>
+                <div className="flex justify-end gap-4 pt-4">
+                  <button 
+                    onClick={() => setIsAddingChapter(false)}
+                    className="px-6 py-2 rounded-full hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleAddChapter}
+                    disabled={!newTitle || !newContent}
+                    className="px-6 py-2 bg-yellow-500 text-black font-semibold rounded-full hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Publish Chapter
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
